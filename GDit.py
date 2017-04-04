@@ -214,15 +214,15 @@ def plot_more_spheroids():
         for q in range(3):
             ax = fig.add_subplot(3,m,q*m+i+1, projection='3d', aspect='equal')
             ax.view_init(elev=q*45.,azim=0)
-            s=ax.plot_surface(x,y,z,rstride=3,cstride=3,facecolors=cm.viridis_r(T) )
+            ax.plot_surface(x,y,z,rstride=3,cstride=3,facecolors=cm.viridis_r(T))
             ax.set_xlim(-1,1)
             ax.set_ylim(-1,1)
             ax.set_zlim(-1,1)
             ax.set_axis_off()
-            title(r'$\omega$='+str(omega)+' $, i=$'+str(q*45))
+            title(r'$\omega$='+str(omega)+', $i$='+str(q*45)+'$^{\circ}$')
 
     tight_layout()
     show()
-    return s
+
 
     
