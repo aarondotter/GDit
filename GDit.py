@@ -15,6 +15,7 @@ f23=2.0/3.0
 Lsun=3.8418e33
 Msun=1.989e33
 Rsun=6.96e10
+pc10=3.085677581e19 #10 parsec in cm
 
 #equations
 #gives the value of phi
@@ -84,7 +85,8 @@ def star_stuff(omega,theta,L,M,Re):
     return R, geff, Teff, Flux
 
 
-def ellipse(Re,Rp,i): #from B&H 2015
+def ellipse(omega,Re,i): #from B&H 2015
+    Rp=Rp_div_Re(omega)*Re
     Re2=Re*Re
     Rp2=Rp*Rp
     b=sqrt((Re2*Rp2)/(Re2*pow(cos(i),2)+Rp2*pow(sin(i),2)))
@@ -93,10 +95,20 @@ def ellipse(Re,Rp,i): #from B&H 2015
     return a, b, pi*a*b
 
 
-
+def spheroid_surface_area(omega,Re):
+    c_div_a=Rp_div_Re(omega)
+    a=Re
+        
+    #c=polar, a=equatorial
+    if omega==0: #spherical
+        extra = 1.0
+    else:
+        e=sqrt(1-pow(c_div_a,2))
+        extra = (1-e*e)*arctanh(e)/e
+    return 2*pi*a*a*(1+extra)
 
 #convenience function for calculating the ratio of Rp to Re
-def Rp_div_Re(omega,type='numerical'):
+def Rp_div_Re(omega,type='analytical'):
     if type=='numerical':
         y= 0.7761742 +  0.22298167*cos(  2.07345414 *omega)
     elif type=='analytical':
@@ -226,3 +238,72 @@ def plot_more_spheroids():
 
 
     
+def dot_spheroid(omega, L, M, Re, i, n=100):
+    
+    #adjust viewing angle to 10 pc
+    observer = array([cos(i), 0, sin(i)])
+
+    #omega defines the spheroid
+    Rp=Rp_div_Re(omega,type='analytical')*Re
+
+    # Set of all spherical angles:
+    #phi_array = linspace(-pi, pi, n)
+    phi_array = linspace(0, 2*pi, n)
+    nu_array = linspace(-pi/2, pi/2, n)
+
+    dnu=diff(nu_array)[0]
+    dphi=diff(phi_array)[0]
+
+#    T=ones_like(nu_array)
+#    R=ones_like(nu_array)
+#    g=ones_like(nu_array)
+#    F=ones_like(nu_array)
+#    for j in range(n):
+#        theta=nu_array[j]
+#        R[j],g[j],T[j],F[j]=star_stuff(omega,theta,L,M,Re)
+
+    if omega==0: #spherical
+        #do some spherical stuff
+        return 0, 0
+        
+    #mu is an angle that define the oblateness of the spheroid
+    mu=arctanh(Rp/Re)
+
+    #a is the focus of the ellipse of revolution
+    a=sqrt(Re*Re - Rp*Rp)
+
+    sinh_mu = sinh(mu)
+    cosh_mu = cosh(mu)
+    acm = a*cosh_mu
+    asm = a*sinh_mu
+
+    cum_area = 0.
+    total_area = 0.
+    
+    for i in range(n-1):
+        nu=nu_array[i]
+        sin_nu=sin(nu)
+        cos_nu=cos(nu)
+        K=sqrt( pow(sinh_mu,2) + pow(sin_nu,2) )
+        Kinv=1.0/K
+        prod=outer(ones_like(phi_array), ones_like(nu_array))
+        for j in range(n-1):
+            phi=phi_array[j]
+            dphi=abs(phi_array[j+1]-phi)
+            cos_phi=cos(phi)
+            sin_phi=sin(phi)
+            # calculate the unit vector normal to the surface,
+            # e_mu, in cartesian coordinates
+            e_mu_x = sinh_mu * cos_nu * cos_phi
+            e_mu_y = sinh_mu * cos_nu * sin_phi
+            e_mu_z = cosh_mu * sin_nu
+            e_mu = Kinv*array([e_mu_x, e_mu_y, e_mu_z])
+
+            #we only keep contributions greater than zero
+            prod[j,i] = max(0, dot(e_mu, observer))
+            area = a*a*K*cosh_mu*cos_nu*dnu*dphi
+            
+            cum_area += prod[j,i]*area
+            total_area += area
+
+    return total_area, cum_area
