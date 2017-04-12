@@ -15,7 +15,6 @@ f23=2.0/3.0
 Lsun=3.8418e33
 Msun=1.989e33
 Rsun=6.96e10
-pc10=3.085677581e19 #10 parsec in cm
 
 #equations
 #gives the value of phi
@@ -36,13 +35,17 @@ def eq32(omega):
     return sqrt(2./(2.+w2))*pow(1.-w2, 1./12.)*exp(-(4./3.)*w2/pow(2+w2, 3))
 
 
-
 def stuff(omega,theta): #eq.26, 27, 28; returns rtw, Fw, Teff_ratio
     """calculates r~, factors multiplying geff and Teff, and Fw"""
 
-    if theta > pi/2:
-        theta -= pi/2
-    if theta < 0:
+    #theta is defined as the polar angle: 
+    # theta = 0 at the pole
+    # theta = pi/2 at the equator
+    # -pi/2 < theta < 0: theta -> abs(theta)
+    #  pi/2 > theta > pi: theta -> pi - theta
+    if pi/2 <= theta <= pi:
+        theta = pi - theta
+    if -pi/2 <= theta <= 0:
         theta = abs(theta)
 
     if omega==0.0: #common sense
@@ -75,6 +78,7 @@ def stuff(omega,theta): #eq.26, 27, 28; returns rtw, Fw, Teff_ratio
         
         return rtw, geff_ratio, Teff_ratio, Fw
 
+    
 def star_stuff(omega,theta,L,M,Re):
     rtw, geff_ratio, Teff_ratio, Fw = stuff(omega,theta)
     eta = L/(4*pi*G*M)
@@ -91,15 +95,15 @@ def ellipse(omega,Re,i): #from B&H 2015
     Rp2=Rp*Rp
     b=sqrt((Re2*Rp2)/(Re2*pow(cos(i),2)+Rp2*pow(sin(i),2)))
     a=Re
-
-    return a, b, pi*a*b
+    area=pi*a*b
+    return a, b, area
 
 
 def spheroid_surface_area(omega,Re):
+    #c=polar, a=equatorial; c/a=Rp/Re
     c_div_a=Rp_div_Re(omega)
     a=Re
-        
-    #c=polar, a=equatorial
+
     if omega==0: #spherical
         extra = 1.0
     else:
@@ -107,74 +111,18 @@ def spheroid_surface_area(omega,Re):
         extra = (1-e*e)*arctanh(e)/e
     return 2*pi*a*a*(1+extra)
 
+
 #convenience function for calculating the ratio of Rp to Re
-def Rp_div_Re(omega,type='analytical'):
-    if type=='numerical':
-        y= 0.7761742 +  0.22298167*cos(  2.07345414 *omega)
-    elif type=='analytical':
-        y= (7. + 2.*cos(2.*pi*omega/3.))/9.0
-    return y
-
-
-#plot one spheroid with Teff variation across the surface
-def plot_one_spheroid(omega):
-    n=100
-    
-    def get_one_T(omega,theta):
-        r,g,T,F=stuff(omega,theta)
-        return T
-    
-    Re=1.0
-    Rp=Rp_div_Re(omega,type='analytical')*Re
-   
-    # Set of all spherical angles:
-    phi = linspace(-pi, pi, n)
-    nu = linspace(-pi/2, pi/2, n)
-
-    angles=outer(ones_like(phi),nu)
-    T=outer(ones_like(phi),ones_like(nu))
-    for j in range(n):
-        theta=angles[0,j]
-        T[:,j]=get_one_T(omega,theta)
-        
-    if(Rp==Re): #spherical
-        a=Re
-        x=a*outer(cos(phi),cos(nu))
-        y=a*outer(sin(phi),cos(nu))
-        z=a*outer(ones_like(phi), sin(nu))
-        
-        T=outer(ones_like(phi), ones_like(nu))
-        
-    else: #spheroidal
-        mu=arctanh(Rp/Re)
-        a=sqrt(Re*Re - Rp*Rp)
-
-        # Cartesian coordinates that correspond to the spherical angles:
-        # (this is the equation of an ellipsoid):
-        x = a*cosh(mu) * outer(cos(phi), cos(nu))
-        y = a*cosh(mu) * outer(sin(phi), cos(nu))
-        z = a*sinh(mu) * outer(ones_like(phi), sin(nu))
-
-        Tmin=T.min()
-        Tmax=T.max()
-        T=(T-Tmin)/(Tmax - Tmin)
-
-        
-    fig = figure(figsize=figaspect(1))  # Square figure
-    ax = fig.add_subplot(111, projection='3d', aspect='equal')
-    ax.plot_surface(x,y,z,rstride=4,cstride=4,facecolors=cm.plasma_r(T) )
-    ax.set_xlim(-1,1)
-    ax.set_ylim(-1,1)
-    ax.set_zlim(-1,1)
-    title(r'$\omega$='+str(omega))
-    show()
-
-
+def Rp_div_Re(omega,type='numerical'):
+    if type=='numerical':  
+        rtw_polar,a,b,c=stuff(omega=omega,theta=0)
+    elif type=='analytical': #a pretty good approx.
+        rtw_polar= (7. + 2.*cos(2.*pi*omega/3.))/9.0
+    return rtw_polar
 
 
 #plot several spheroids with Teff variation across the surface
-def plot_more_spheroids():
-    n=100
+def plot_spheroids(n=100):
     m=7
     
     def get_one_T(omega,theta):
@@ -236,74 +184,105 @@ def plot_more_spheroids():
     tight_layout()
     show()
 
+    
+def dot_spheroid(omega, L, M, Re, i, n_phi=100, n_nu=100, do_checks=False):
 
+    #n_phi=400
+    #n_nu=400
     
-def dot_spheroid(omega, L, M, Re, i, n=100):
+    if omega==0: #spherical
+        total_area = 4*pi*pow(Re,2)
+        net_area = 0.5*total_area
+        F_surf = L
+        T_surf = pow(L/(total_area*sigma), 0.25)
+        g_surf = G*M*pow(Re,-2)
+        return total_area, net_area, F_surf, T_surf, log10(g_surf)
     
-    #adjust viewing angle to 10 pc
+    #the observer in the xz-plane (y=0)
+    #the inclination angle i is defined such that
+    # i=0 along the x-axis
+    # i=pi/2 along the z-axis
     observer = array([cos(i), 0, sin(i)])
 
     #omega defines the spheroid
-    Rp=Rp_div_Re(omega,type='analytical')*Re
+    Rp = Rp_div_Re(omega)*Re
 
-    # Set of all spherical angles:
-    #phi_array = linspace(-pi, pi, n)
-    phi_array = linspace(0, 2*pi, n)
-    nu_array = linspace(-pi/2, pi/2, n)
-
-    dnu=diff(nu_array)[0]
-    dphi=diff(phi_array)[0]
-
-#    T=ones_like(nu_array)
-#    R=ones_like(nu_array)
-#    g=ones_like(nu_array)
-#    F=ones_like(nu_array)
-#    for j in range(n):
-#        theta=nu_array[j]
-#        R[j],g[j],T[j],F[j]=star_stuff(omega,theta,L,M,Re)
-
-    if omega==0: #spherical
-        #do some spherical stuff
-        return 0, 0
-        
     #mu is an angle that define the oblateness of the spheroid
     mu=arctanh(Rp/Re)
 
     #a is the focus of the ellipse of revolution
     a=sqrt(Re*Re - Rp*Rp)
 
+    #spherical angles:
+    phi_array = linspace(0, 2*pi, n_phi)
+    nu_array = linspace(-pi/2, pi/2, n_nu)
+    dnu=nu_array[1]-nu_array[0]
+    dphi=phi_array[1]-phi_array[0]    
+
+    #used repeatedly below
     sinh_mu = sinh(mu)
     cosh_mu = cosh(mu)
-    acm = a*cosh_mu
-    asm = a*sinh_mu
 
-    cum_area = 0.
+    #zero the cumulative sums
+    net_area = 0.
     total_area = 0.
+    T_surf = 0.
+    g_surf = 0.
+    F_surf = 0.
+    F_directional = 0.
     
-    for i in range(n-1):
-        nu=nu_array[i]
-        sin_nu=sin(nu)
-        cos_nu=cos(nu)
+    for i in range(n_nu-1):
+        # subtle but important difference in the definitions of nu and theta
+        # both are polar angles but theta=0 at the pole, nu=zero at the equator
+        nu = nu_array[i]
+        theta = pi/2 - nu
+        sin_nu = sin(nu)
+        cos_nu = cos(nu)
+
+        #scale factors
         K=sqrt( pow(sinh_mu,2) + pow(sin_nu,2) )
-        Kinv=1.0/K
-        prod=outer(ones_like(phi_array), ones_like(nu_array))
-        for j in range(n-1):
-            phi=phi_array[j]
-            dphi=abs(phi_array[j+1]-phi)
+        h_nu = a*K
+        h_phi = a*cosh_mu*cos_nu
+
+        #surface properties
+        R,g,T,F = star_stuff(omega,theta,L,M,Re)
+        
+        for j in range(n_phi-1):
+            phi=phi_array[j] 
             cos_phi=cos(phi)
             sin_phi=sin(phi)
+            
             # calculate the unit vector normal to the surface,
             # e_mu, in cartesian coordinates
             e_mu_x = sinh_mu * cos_nu * cos_phi
             e_mu_y = sinh_mu * cos_nu * sin_phi
             e_mu_z = cosh_mu * sin_nu
-            e_mu = Kinv*array([e_mu_x, e_mu_y, e_mu_z])
+            e_mu = array([e_mu_x, e_mu_y, e_mu_z]) / K
 
-            #we only keep contributions greater than zero
-            prod[j,i] = max(0, dot(e_mu, observer))
-            area = a*a*K*cosh_mu*cos_nu*dnu*dphi
+            # only keep positive contributions
+            proj = max(0,dot(e_mu, observer))
+
+            # spheroidal area element
+            area = h_nu*dnu * h_phi*dphi
+
+            #projected area
+            proj_area = proj*area
             
-            cum_area += prod[j,i]*area
+            T_surf += T*proj_area
+            g_surf += g*proj_area
+            F_surf += F*area
+            F_directional += F*proj_area
+            net_area += proj_area
             total_area += area
 
-    return total_area, cum_area
+    ellipse_area=ellipse(omega,Re,i)[2]
+    surface_area=spheroid_surface_area(omega,Re)
+    flux_check = F_surf / L
+    ellipse_check = net_area / ellipse_area
+    area_check = total_area / surface_area
+    print('\n')
+    print('flux check1, F/L: {0:n}'.format(flux_check))
+    print('ellipse check: {0:n}'.format(ellipse_check))
+    print('area check: {0:n}'.format(area_check))
+           
+    return flux_check, ellipse_check, area_check

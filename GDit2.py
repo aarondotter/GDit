@@ -1,0 +1,209 @@
+from pylab import *
+from scipy.optimize import root
+from scipy.integrate import simps, trapz
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib import cm
+
+""" Implements Espinosa Lara & Rieutord 2011 equations for gravity darkening """
+
+"""xticks([0, pi/8, pi/4, 3*pi/8, pi/2], ['0', r'$\pi/8$', r'$\pi/4$', r'$3\pi/8$', r'$\pi/2'], fontsize=18"""
+
+#constants
+G=6.67428e-8
+sigma=5.67040e-5
+f23=2.0/3.0
+Lsun=3.8418e33
+Msun=1.989e33
+Rsun=6.96e10
+
+#equations
+#gives the value of phi
+def eq24(phi,theta,omega,rtw):
+    tau = (pow(omega,2) * pow(rtw*cos(theta),3) )/3.0 + cos(theta) + log(tan(0.5*theta))
+    return cos(phi) + log(tan(0.5*phi)) - tau
+
+
+#solve for rtw given omega
+def eq30(rtw,theta,omega):
+    w2=omega*omega
+    return (1./w2)*(1./rtw - 1.0) + 0.5*(pow(rtw*sin(theta),2) - 1.0)
+
+
+#ratio of equatorial to polar Teff
+def eq32(omega):
+    w2=omega*omega
+    return sqrt(2./(2.+w2))*pow(1.-w2, 1./12.)*exp(-(4./3.)*w2/pow(2+w2, 3))
+
+
+def stuff(omega,theta): #eq.26, 27, 28; returns rtw, Fw, Teff_ratio
+    """calculates r~, Teff_ratio, and Flux_ratio"""
+
+    #theta is defined as the polar angle.
+    #this routine calculates values for 0 <= theta <= pi/2
+    #everything else is mapped into this interval by symmetry
+    # theta = 0 at the pole
+    # theta = pi/2 at the equator
+    # -pi/2 < theta < 0: theta -> abs(theta)
+    #  pi/2 > theta > pi: theta -> pi - theta
+    if pi/2 < theta <= pi:
+        theta = pi - theta
+    if -pi/2 <= theta < 0:
+        theta = abs(theta)
+
+    if omega==0.0: #common sense
+        return ones(3)
+    
+    else: 
+        q = root(fun=eq30,args=(theta, omega), x0=1.0)
+        rtw = asscalar(q['x'])
+
+        w2r3=pow(omega,2)*pow(rtw,3)
+
+        if theta==0.0: #pole, eq. 27
+            Fw = exp( f23 * w2r3 )
+
+        elif theta==0.5*pi: #equator, eq. 28
+            Fw = pow(1.0 - w2r3, -f23)
+
+        else: #general case
+            q = root(fun=eq24,args=(theta, omega, rtw), x0=theta)
+            phi = asscalar(q['x'])
+            
+            Fw = pow(tan(phi)/tan(theta), 2)
+
+        term1 = pow(rtw,-4)
+        term2 = pow(omega,4)*pow(rtw*sin(theta),2)
+        term3 = -2*pow(omega*sin(theta),2)/rtw
+        gterm = sqrt(term1+term2+term3)
+        Flux_ratio = Fw*gterm
+        Teff_ratio = pow(Flux_ratio,0.25)
+        
+        return rtw, Teff_ratio, Flux_ratio
+
+def Rp_div_Re(omega):
+    rtw, Teff_ratio, Flux_ratio = stuff(omega, theta=0)
+    return rtw
+
+def R_from_Rp_and_Re(omega):
+    #based on the assumption that Re=1
+    Rp=Rp_div_Re(omega)
+    return cbrt(Rp)
+
+def spheroid_surface_area(Rp,Re):
+    #c=polar, a=equatorial; c/a=Rp/Re
+    c_div_a=Rp / Re
+    a=Re
+    if c_div_a == 1.0 : #spherical
+        extra = 1.0
+    else:
+        e=sqrt(1-pow(c_div_a,2))
+        extra = (1-e*e)*arctanh(e)/e
+    return 2*pi*a*a*(1+extra)
+
+
+### WRONG WRONG WRONG!!!
+#def ellipseBH(Rp,Re,i): #from B&H 2015
+#    Re2=Re*Re
+#    Rp2=Rp*Rp
+#    b=sqrt((Re2*Rp2)/(Rp2*pow(sin(i),2)+Re2*pow(cos(i),2)))
+#    a=Re
+#    area=pi*a*b
+#    return area
+
+def beta(theta,q): #q is ratio Rp/Re; Binggeli et al. 1980
+    j= pow(q*sin(theta),2) + pow(cos(theta),2)
+    l=1.0
+    top=j+l-sqrt( pow(j-l,2))
+    bottom=j+l+sqrt( pow(j-l,2))
+    return sqrt(top/bottom)
+
+def ellipse(Rp, Re, i): 
+    b=beta(theta=pi/2-i,q=Rp/Re)
+    return pi*Re*Re*b
+
+def try_again(omega, i, n_nu=50, n_phi=50):
+
+    if omega==0: #perfect sphere
+        return ones(2)
+    
+    #line of sight, inclination angle i
+    LOS = array([cos(i), 0, sin(i)])
+
+    #spherical angles
+    phi_array = linspace(-pi, pi, n_phi)
+    dphi=diff(phi_array)[0]
+    nu_array = linspace(-pi/2, pi/2, n_nu)
+    dnu=diff(nu_array)[0]
+
+    #find the polar radius
+    Re=1.
+    Rp=Rp_div_Re(omega)
+
+    mu=arctanh(Rp/Re)
+
+    a=sqrt(Re*Re - Rp*Rp)
+
+    sinh_mu = sinh(mu)
+    cosh_mu = cosh(mu)
+
+    #now do area integrals
+    nu_int1=empty(n_nu)
+    nu_int2=empty(n_nu)
+    nu_int3=empty(n_nu)
+    nu_int4=empty(n_nu)
+    nu_int5=empty(n_nu)
+
+    #loop over polar angle nu
+    for j,nu in enumerate(nu_array):
+
+        theta = pi/2 - nu
+        r,T,F=stuff(omega=omega,theta=theta)
+        
+        cos_nu = cos(nu)
+        sin_nu = sin(nu)
+
+        #scale factors
+        K = sqrt(pow(sinh_mu,2) + pow(sin_nu,2))
+        h_nu = a*K
+        h_phi = a*cosh_mu*cos_nu
+        
+        phi_int1 = empty(n_phi)
+        phi_int2 = empty(n_phi)
+
+        #loop over azimuth angle phi
+        for k,phi in enumerate(phi_array):
+            e_mu_x = sinh_mu * cos_nu * cos(phi)
+            e_mu_y = sinh_mu * cos_nu * sin(phi)
+            e_mu_z = cosh_mu * sin_nu
+            e_mu = array([e_mu_x, e_mu_y, e_mu_z]) / K
+
+            dArea = h_nu * h_phi
+            proj = max(0,dot(e_mu,LOS))
+            phi_int1[k] = dArea
+            phi_int2[k] = dArea*proj
+
+        #phi integral at constant nu
+        nu_int1[j] = simps(y=phi_int1,dx=dphi) #total surface area
+        nu_int2[j] = simps(y=phi_int2,dx=dphi) #projected area
+        nu_int3[j] = Tim*nu_int2[j] #integral of Teff_ratio, projected
+        nu_int4[j] = F*nu_int2[j] #integral of Flux_ratio, projected
+        nu_int5[j] = F*nu_int1[j] #integral of Flux_ratio, total
+
+    #nu integrals
+    surface_area = simps(y=nu_int1, dx=dnu)
+    projected_area = simps(y=nu_int2, dx=dnu)
+    total_flux = simps(y=nu_int5, dx=dnu)
+    
+    C_L = 4 * simps(y=nu_int4, dx=dnu) / total_flux
+    C_T = pow( C_L * surface_area / projected_area / 4, 0.25 )
+    
+    surface_area_check = abs( surface_area / spheroid_surface_area(Rp,Re) - 1.0)
+    projected_area_check = abs( projected_area / ellipse(Rp, Re, i) - 1.0)
+    #total_flux_check = abs(total_flux_ratio
+    if surface_area_check > 0.001 or projected_area_check > 0.001:
+        print(' omega, i = {0:n}, {1:n}'.format(omega,i))
+        print(' surface area ratio: {0:n}'.format(surface_area_ratio))
+        print(' projected area ratio: {0:n}'.format(projected_area_ratio))
+
+        
+    return C_T, C_L
