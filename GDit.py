@@ -3,10 +3,14 @@ from scipy.optimize import root
 from scipy.integrate import simps, trapz
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
+from scipy.interpolate import RectBivariateSpline
+
 
 """ Implements Espinosa Lara & Rieutord 2011 equations for gravity darkening """
 
 """xticks([0, pi/8, pi/4, 3*pi/8, pi/2], ['0', r'$\pi/8$', r'$\pi/4$', r'$3\pi/8$', r'$\pi/2'], fontsize=18"""
+
+""" to read in C_T and C_L from data.p, C_T, C_L = pickle.load(open('data.p','rb'))"""
 
 #constants
 G=6.67428e-8
@@ -84,10 +88,17 @@ def Rp_div_Re(omega):
     rtw, Teff_ratio, Flux_ratio = stuff(omega, theta=0)
     return rtw
 
-def R_from_Rp_and_Re(omega):
-    #based on the assumption that Re=1
-    Rp=Rp_div_Re(omega)
-    return cbrt(Rp)
+def R_div_Re(omega):
+    return cbrt(Rp_div_Re(omega))
+
+def Re_div_R(omega):
+    return 1.0/R_div_Re(omega)
+
+def Rp_div_R(omega):
+    return pow(Rp_div_Re(omega), f23)
+
+def R_div_Rp(omega):
+    return 1.0/Rp_div_R(omega)
 
 def spheroid_surface_area(Rp,Re):
     #c=polar, a=equatorial; c/a=Rp/Re
@@ -100,15 +111,8 @@ def spheroid_surface_area(Rp,Re):
         extra = (1-e*e)*arctanh(e)/e
     return 2*pi*a*a*(1+extra)
 
-
-### WRONG WRONG WRONG!!!
-#def ellipseBH(Rp,Re,i): #from B&H 2015
-#    Re2=Re*Re
-#    Rp2=Rp*Rp
-#    b=sqrt((Re2*Rp2)/(Rp2*pow(sin(i),2)+Re2*pow(cos(i),2)))
-#    a=Re
-#    area=pi*a*b
-#    return area
+def spheroid_volume(Rp,Re):
+    return 4*pi*Rp*Re*Re/3
 
 def beta(theta,q): #q is ratio Rp/Re; Binggeli et al. 1980
     j= pow(q*sin(theta),2) + pow(cos(theta),2)
@@ -185,7 +189,7 @@ def try_again(omega, i, n_nu=50, n_phi=50):
         #phi integral at constant nu
         nu_int1[j] = simps(y=phi_int1,dx=dphi) #total surface area
         nu_int2[j] = simps(y=phi_int2,dx=dphi) #projected area
-        nu_int3[j] = Tim*nu_int2[j] #integral of Teff_ratio, projected
+        nu_int3[j] = T*nu_int2[j] #integral of Teff_ratio, projected
         nu_int4[j] = F*nu_int2[j] #integral of Flux_ratio, projected
         nu_int5[j] = F*nu_int1[j] #integral of Flux_ratio, total
 
@@ -199,11 +203,29 @@ def try_again(omega, i, n_nu=50, n_phi=50):
     
     surface_area_check = abs( surface_area / spheroid_surface_area(Rp,Re) - 1.0)
     projected_area_check = abs( projected_area / ellipse(Rp, Re, i) - 1.0)
-    #total_flux_check = abs(total_flux_ratio
+
     if surface_area_check > 0.001 or projected_area_check > 0.001:
         print(' omega, i = {0:n}, {1:n}'.format(omega,i))
         print(' surface area ratio: {0:n}'.format(surface_area_ratio))
         print(' projected area ratio: {0:n}'.format(projected_area_ratio))
-
         
     return C_T, C_L
+
+def save_coefficients(n):
+    omega=linspace(0,1,n)
+    inclination=linspace(0,pi/2,n)
+    C_T=empty((n,n))
+    C_L=empty((n,n))
+
+
+def create_interpolants(npz):
+    data=load(npz)
+    C_L=data['C_L']
+    C_T=data['C_T']
+    omega=data['omega']
+    inclination=data['inclination']
+    f_T=RectBivariateSpline(y=omega, x=inclination, z=C_T)
+    f_L=RectBivariateSpline(y=omega, x=inclination, z=C_L)
+    return f_T, f_L
+
+    
