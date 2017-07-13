@@ -1,16 +1,17 @@
+"""Gravity Darkening (GD) module:
+   Implements the Espinosa Lara & Rieutord GD model and applies it to an
+   oblate spheroidal surface. Includes a process to compute the observed
+   Teff and luminosity projected along the line of sight."""
+
+__version__ = '0'
+__author__ = 'Aaron Dotter'
+
 from pylab import *
 from scipy.optimize import root
 from scipy.integrate import simps, trapz
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
 from scipy.interpolate import RectBivariateSpline
-
-
-""" Implements Espinosa Lara & Rieutord 2011 equations for gravity darkening """
-
-"""xticks([0, pi/8, pi/4, 3*pi/8, pi/2], ['0', r'$\pi/8$', r'$\pi/4$', r'$3\pi/8$', r'$\pi/2'], fontsize=18"""
-
-""" to read in C_T and C_L from data.p, C_T, C_L = pickle.load(open('data.p','rb'))"""
 
 #constants
 G=6.67428e-8
