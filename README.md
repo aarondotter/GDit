@@ -10,3 +10,5 @@ The code allows one to calculate the gravity darkening coefficients C_L and C_T,
 
 C_T and C_L allow one to quickly determine the observational consquences of rotating stars at random orientations.
 ![H-R diagram](https://github.com/aarondotter/GDit/blob/master/plots/HRD.png)
+
+Further documentation is provided in [doc/GDit.pdf](doc/GDit.pdf).
