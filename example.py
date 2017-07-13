@@ -6,8 +6,8 @@
 __version__ = '0'
 __author__ = 'Aaron Dotter'
 
-from numpy import array, load, savez
-#from pylab import *
+#from numpy import array, load, savez, squeeze, where
+from pylab import *
 from scipy.interpolate import RectBivariateSpline
 from read_mist_models import *
 
