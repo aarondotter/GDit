@@ -1,4 +1,13 @@
-from pylab import *
+"""Gravity Darkening (GD) module:
+   Implements the Espinosa Lara & Rieutord GD model and applies it to an
+   oblate spheroidal surface. Includes a process to compute the observed
+   Teff and luminosity projected along the line of sight."""
+
+__version__ = '0'
+__author__ = 'Aaron Dotter'
+
+from numpy import array, load, savez
+#from pylab import *
 from scipy.interpolate import RectBivariateSpline
 from read_mist_models import *
 
@@ -20,7 +29,7 @@ f_T, f_L = create_interpolants('GD.npz')
 
 #choose one isochrone for demonstration
 iso=x.isos[x.age_index(7.5)]
-i=squeeze(where( (iso['EEP']<808) & (iso['EEP']>202) ))
+i=squeeze(where((iso['EEP']<808) & (iso['EEP']>202)))
 iso=iso[i]
 omega=iso['surf_avg_omega_div_omega_crit']
 T=pow(10,iso['log_Teff'])

@@ -26,23 +26,19 @@ def eq24(phi,theta,omega,rtw):
     tau = (pow(omega,2) * pow(rtw*cos(theta),3) )/3.0 + cos(theta) + log(tan(0.5*theta))
     return cos(phi) + log(tan(0.5*phi)) - tau
 
-
 #solve for rtw given omega
 def eq30(rtw,theta,omega):
     w2=omega*omega
     return (1./w2)*(1./rtw - 1.0) + 0.5*(pow(rtw*sin(theta),2) - 1.0)
-
 
 #ratio of equatorial to polar Teff
 def eq32(omega):
     w2=omega*omega
     return sqrt(2./(2.+w2))*pow(1.-w2, 1./12.)*exp(-(4./3.)*w2/pow(2+w2, 3))
 
-
 def stuff(omega,theta): #eq.26, 27, 28; solve the ELR11 equations
     """calculates r~, Teff_ratio, and Flux_ratio"""
-
-    #theta is defined as the polar angle.
+    #theta is the polar angle.
     #this routine calculates values for 0 <= theta <= pi/2
     #everything else is mapped into this interval by symmetry
     # theta = 0 at the pole(s)
@@ -133,8 +129,6 @@ def ellipse(Rp, Re, i):
     b=beta(theta=pi/2-i,q=Rp/Re)
     return pi*Re*Re*b
 
-
-
 def geometric_factors(omega, i, n_nu=50, n_phi=50, do_checks=False):
     """solves for geometric factors C_T and C_L for arbitrary omega, and inclination"""
     if omega==0: #perfect sphere
@@ -220,16 +214,12 @@ def geometric_factors(omega, i, n_nu=50, n_phi=50, do_checks=False):
         
     return C_T, C_L
 
-
-
 #compute the coefficients C_T and C_L on an nxn matrix
 def save_coefficients(n,output='GD.npz'):
     omega=linspace(0,1,n)
     inclination=linspace(0,pi/2,n)
     C_T=empty((n,n))
     C_L=empty((n,n))
-    #not finished!
-    #use savez
     for i,omega in enumerate(omega):
         for j,incl in enumerate(inclination):
             C_T[j,i], C_L[j,i] = geometric_factors(omega, incl)
