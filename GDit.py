@@ -247,4 +247,33 @@ def create_interpolants(npz):
     f_L=RectBivariateSpline(y=omega, x=inclination, z=C_L)
     return f_T, f_L
 
+#requires the npz datafile from create_interpolant
+def plot_colormap(npz='GD.npz'):
+    fs=18
+    data=load(npz)
+    C_T=data['C_T']
+    C_L=data['C_L']
+    s=shape(C_T)
+    close(1)
+    figure(1,figsize=(9,8))
+    subplots_adjust(right=0.95)
+    imshow(C_L,cmap='Spectral',interpolation='bicubic',origin='lower',extent=(0,1,0,pi/2),aspect='auto')
+    yticks([0, pi/8, pi/4, 3*pi/8, pi/2], [r'$0$', r'$\pi/8$', r'$\pi/4$', r'$3\pi/8$', r'$\pi/2$'], fontsize=fs)
+    xticks(fontsize=fs)
+    xlabel(r'$\omega$',fontsize=fs)
+    ylabel(r'Inclination',fontsize=fs)
+    cbar=colorbar()
+    cbar.set_label(r'$\mathrm{C_L}$',size=18)
     
+    close(2)
+    figure(2,figsize=(9,8))
+    subplots_adjust(right=0.95)
+    imshow(C_T,cmap='Spectral',interpolation='bicubic',origin='lower',extent=(0,1,0,pi/2),aspect='auto')
+    colorbar()
+    cbar.set_label(r'$\mathrm{C_T}$',size=18)
+    yticks([0, pi/8, pi/4, 3*pi/8, pi/2], [r'$0$', r'$\pi/8$', r'$\pi/4$', r'$3\pi/8$', r'$\pi/2$'], fontsize=fs)
+    xticks(fontsize=fs)
+    xlabel(r'$\omega$',fontsize=fs)
+    ylabel(r'Inclination',fontsize=fs)
+
+    show()
