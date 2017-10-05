@@ -5,6 +5,7 @@
 \usepackage{graphicx}
 \usepackage{mathtools}
 \usepackage{amsmath}
+\usepackage{fontawesome}
 
 \DeclareMathOperator{\arctanh}{arctanh}
 
@@ -29,7 +30,7 @@ luminosity in order to account for the effects of gravity darkening as well as
 the orientation of the observer relative to the stellar rotation axis. I introduce
 \texttt{GDit}, a Python module to calculate these corrections as well as a
 simple means of applying them to stellar evolution models. The code and this document
-are available from the \href{https://github.com/aarondotter/GDit}{Github repo}.
+are available from the \href{https://github.com/aarondotter/GDit}{Github repository}. \faGithub
 \end{abstract}
 
 
@@ -178,19 +179,22 @@ $+50\%$ while $C_T$ varies by $\pm4\%$. When the LOS is oriented at
 $i=34^{\circ}$ ($0.6$ rad) above the equatorial plane, both $C_L~,~C_T \simeq 1$
 for all $\omega$.
 
-\section{Python code for $C_T$ and $C_L$}
-The github repository provides Python code to numerically solve the differential equations in the ELR model
+\section{Python implementation}
+\texttt{GDit} provides Python code to numerically solve the differential equations in the ELR model
 and to compute the geometric coefficients $C_L$ and $C_T$ for arbitrary $\omega$ and $i$. The repository
-also includes a Python interface to interpolate $C_L$ and $C_T$ coefficients from a $50\times50$ grid
-stored in a data file.  Separate interpolants are provided for $C_L$ and $C_T$ to enable the application
-of gravity darkening corrections to stellar evolution models. As an example, Figure \ref{fig:HRD} shows
-a MIST isochrone (Choi et al.\ 2016, ApJ, 823, 102) with $\omega=0.4$ (at the ZAMS). The left panel shows
+also includes a Python interface to interpolate $C_L$ and $C_T$ coefficients from a $50\times50$ grid.
+The grid is stored in a data file that is also included with the code. Separate interpolants are provided
+for $C_L$ and $C_T$ to enable the application
+of gravity darkening corrections to stellar evolution models.
+As an \href{https://github.com/aarondotter/GDit/blob/master/example.py}{example}, Figure \ref{fig:HRD} shows
+a MIST isochrone (Choi et al.\ 2016, ApJ, 823, 102) with $\omega=0.4$ at the ZAMS. The left panel shows
 the intrinsic $\Teff$ and luminosity as well as the gravity-darkened values for $i=0$ and $i=90^{\circ}$.
-The right panel shows how $\omega$ evolves along the isochrone from the initial value of $\omega=0.4$ set
-at the ZAMS. The most dramatic differences in the H-R diagram occur when $\omega$ is large. $\omega$ is
-provided in MIST as \texttt{surf\_avg\_omega\_div\_omega\_crit}.
+The right panel shows how $\omega$ evolves along the isochrone. The most dramatic differences in the
+H-R diagram occur where $\omega$ is large. Note that $\omega$ is provided by MESA, hence also by MIST,
+as \texttt{surf\_avg\_omega\_div\_omega\_crit}.
 
 \begin{figure}
+  \centering
   \includegraphics[width=0.9\textwidth]{../plots/iso.pdf}
   \caption{MIST isochrone with [Fe/H]=0, log(age[yr])=7.5, and $\omega=0.4$ at the ZAMS.
     \emph{Left:} The H-R diagram showing the effect of changing the inclination angle $i$ from
