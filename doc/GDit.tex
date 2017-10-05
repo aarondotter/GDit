@@ -1,5 +1,7 @@
 \documentclass[12pt]{article}
 
+\usepackage{units}
+\usepackage[colorlinks=true]{hyperref}
 \usepackage{graphicx}
 \usepackage{mathtools}
 \usepackage{amsmath}
@@ -11,21 +13,23 @@
 
 \begin{document}
 
-\title{Surface-averaged gravity darkening corrections for 1-D stellar evolution models}
+\title{\texttt{GDit}: a Python library for gravity darkening corrections to stellar evolution models}
 \author{Aaron Dotter}
 
 \maketitle
 
 \begin{abstract}
 Rotating stars are subject to gravity darkening, in which the flux
-at the stellar surface is proportional to the local surface gravity and,
-thus, a rotating star appears both hotter and brighter at the poles than
-at the equator. This document describes a method to derive gravity
-darkening corrections that can be applied to stellar evolution models;
-these adjust the intrinsic model effective temperature , surface gravity, and luminosity
-in order to account for the effects of surface rotation as well as the
-angle between the stellar rotation axis and the line of sight. I provide
-a Python implementation to apply these corrections to stellar evolution models.
+at the stellar surface is not uniformly distributed. As a consequence
+a rotating star appears both hotter and brighter at the poles than
+at the equator. This document describes a method to derive surface-averaged
+gravity darkening corrections that can be applied to stellar evolution models.
+These adjust the intrinsic model effective temperature, surface gravity, and
+luminosity in order to account for the effects of gravity darkening as well as
+the orientation of the observer relative to the stellar rotation axis. I introduce
+\texttt{GDit}, a Python module to calculate these corrections as well as a
+simple means of applying them to stellar evolution models. The code and this document
+are available from the \href{https://github.com/aarondotter/GDit}{Github repo}.
 \end{abstract}
 
 
@@ -68,16 +72,18 @@ These are straightforward to solve with a root-find and, at this point one can c
 \begin{figure}
   \centering
   \includegraphics[width=0.99\textwidth]{../plots/R_and_T.pdf}
-  \caption{\emph{Left:} The ratio of the stellar radius to the equatorial radius ($\tilde{r}=R/R_e$) as a function of the polar angle $\theta$ for different values of $\omega$. \emph{Right:} Similar to the left panel but now showing $\twTeff$, see text for details.\label{fig:ELR}}
+  \caption{Solution of the ELR model for $0 \leq \omega \leq 1$; each curve is a different value of $\omega$. \emph{Left:} The ratio of the stellar radius to the equatorial radius ($\tilde{r}=R/R_e$) as a function of the polar angle $\theta$ for different values of $\omega$. \emph{Right:} Similar to the left panel but now showing $\twTeff$, see text for details. Recall that $\theta=0$ corresponds to the pole and $\theta=\pi/2$ to the equator.\label{fig:ELR}}
 \end{figure}
 
 Figure \ref{fig:ELR} shows the solution of the ELR model as a function of
 $\theta$ for different values of $\omega$. Figure \ref{fig:ELR} indicates
-that the polar radius reaches a minimum value of $R_p = (2/3) R_e$ at $\omega=\pi/2$.
+that the polar radius reaches a minimum value of $R_p = (2/3) R_e$ at $\omega=1$.
 $\twTeff$ is included in the right panel of Figure \ref{fig:ELR}. When
-$\omega=0$, the idealized star is spherical and, thus, $R_p = R_e$ and $\twTeff = \Teff$ for all $\theta$.
+$\omega=0$, the idealized star is spherical and, thus, $R_p = R_e$ and
+$\twTeff = \Teff$ for all $\theta$. When $\omega=1$, $\twTeff$ varies by as much
+as $\sim25\%$ between the pole and the equator.
 
-\section{Oblate spheroids and projection effects}
+\section{Oblateness and projection effects}
 Now that we have a solution for the ELR model we can begin to
 compute the projected luminosity along the line of sight (LOS). The surface is
 an oblate spheroid so we work in oblate spheroidal coordinates. The coordinate
@@ -85,28 +91,48 @@ system is defined by three variables: polar angle $\nu$, azimuthal angle
 $\phi$, and $\mu$ = $\arctanh( R_p /R_e )$. It is important to distinguish
 between $\nu$ in the oblate spheroidal coordinate system and the polar angle
 $\theta$ in the ELR model: $\nu = 0$ at the equator; $\nu = \pi/2$ at the pole
-and, thus, $\theta = \pi/2 - \nu$.
+and, thus, $\theta = \pi/2 - \nu$. Note also that, due to azimuthal symmetry
+in this problem, there is no explicit $\phi$-dependence in the following.
 
 With the oblate spheroidal coordinate system thus defined, and properly
 connected to the ELR model, we can now integrate over the stellar surface
 ($\Sigma$). However, the quantity that we want is that projected along the line
 of sight (LOS) and for that we need to define one additional angle, $i$, and the
-LOS unit vector $\hat{l}$. $i$ is chosen such that $i = 0$ at the equator.
-The projected surface is denoted by $\Sigma_{proj}$.
+LOS unit vector $\hat{l}(i)$. $i$ is chosen such that $i = 0$ at the equator.
+The projected surface is denoted $\Sigma_{proj}$.
 
-A useful analytical formula to calculate $\Sigma_{proj}$ for any orientation is given by
-Binggeli~(1980, A\&A, 82, 289). Note that Brandt \& Huang (2015, ApJ, 807, 58) use a different formula,
-which is only correct at $i = 0$ and $\pi/2$. Compared to Binggeli's formula, the Brandt \& Huang
-formula leads to a maximum error of $\sim8\%$ in $\Sigma_{proj}$ at $i = \pi/4$.
-
-To calculate the luminosity projected along the LOS $L_{proj}$ requires the
-surface integral
+An analytical formula to calculate $\Sigma_{proj}$ (the area of an ellipse) for
+arbitrary orientation of an ellipsoid is given by Binggeli~(1980, A\&A, 82, 289; eqs.\ 2 \& 3).
+The area of an ellipse is $\pi~a~b$ and we take $a=R_e$. Then the problem reduces
+to finding the ratio of the semi-minor axis to the semi-major axis ($\beta = b/a$)
+of the projected ellipse, which simplifies, for an oblate spheroid, to
 \begin{equation}
+\beta = \sqrt{ \frac{j + 1 - \sqrt{ (j-1)^2}}{j+1+\sqrt{(j-1)^2}} }
+\end{equation}
+where, using $q=R_p/R_e$ and $\alpha=\pi/2-i$, 
+\begin{equation}
+j = q^2 \sin^2 \alpha + \cos^2 \alpha
+\end{equation}
+Finally, the projected area is 
+\begin{equation}
+  \Sigma_{proj} = \pi \beta R_e^2
+\end{equation}
+Note that Brandt \& Huang (2015, ApJ, 807, 58) use a different formula that is only
+correct at $i = 0$ and $i=\pi/2$. Compared to Binggeli's formula, the
+Brandt \& Huang formula leads to a maximum error of $\sim8\%$ in $\Sigma_{proj}$
+at $i = \pi/4$.
+
+To calculate the luminosity projected along the LOS, $L_{proj}$, requires the
+surface integral
+\begin{equation}\label{eq:lproj}
   L_{proj} = 4 \iint \limits_{d\vec{\Sigma} \cdot \hat{l} > 0} F d\vec{\Sigma} \cdot \hat{l}
 \end{equation}
-where only the flux projected toward the observer, i.e., $d\vec{\Sigma} \cdot \hat{l} \geq 0$, is kept. Once $L_{proj}$ and $\Sigma_{proj}$ are known, the projected effective temperature, $\Teff_{proj}$, can be obtained from the Stefan-Boltzmann law
+where only the flux projected toward the observer,
+i.e., $d\vec{\Sigma} \cdot \hat{l} \geq 0$, is kept.
+Once $L_{proj}$ and $\Sigma_{proj}$ are known, the projected effective temperature,
+$\Teff_{,proj}$, can be obtained from the Stefan-Boltzmann law
 \begin{equation}
-\Teff_{proj} = \left( \frac{L_{proj}}{\sigma \Sigma_{proj}} \right)^{1/4}
+\Teff_{,proj} = \left( \frac{L_{proj}}{\sigma \Sigma_{proj}} \right)^{1/4}
 \end{equation}
 where $\sigma$ is the Stefan-Boltzmann constant.
 
@@ -122,9 +148,9 @@ where $\sigma$ is the Stefan-Boltzmann constant.
 
 
 The following is based closely on what is done in the SYCLIST code
-(Georgy et al.\ 2014, A\&A, 566, 21). The double integral (4) is, essentially, a
+(Georgy et al.\ 2014, A\&A, 566, 21). The double integral (\ref{eq:lproj}) is a
 geometric factor that does not depend on the stellar temperature or luminosity.
-It only depends upon $\omega$ and $i$. Thus, it makes sense to derive correction
+It only depends on $\omega$ and $i$. Thus, it makes sense to derive correction
 factors which allow the projected quantities to be determined from the model
 intrinsic quantities by geometric scaling factors, i.e.,
 \begin{equation}
@@ -132,11 +158,11 @@ intrinsic quantities by geometric scaling factors, i.e.,
 \end{equation}
 and
 \begin{equation}
-  \Teff_{proj}(\omega,i) = C_T(\omega,i) \Teff
+  \Teff_{,proj}(\omega,i) = C_T(\omega,i) \Teff
 \end{equation}
 Thus defined, the geometric factors $C_L$ and $C_T$ are given by
 \begin{equation}
-C_L = \frac{4 \iint\limits_{d\Sigma \cdot l > 0} F \vec{d\Sigma} \cdot \hat{l} }{\iint\limits_\Sigma F d\Sigma}
+C_L = \frac{L_{proj} }{\iint\limits_\Sigma F d\Sigma}
 \end{equation}
 and
 \begin{equation}
@@ -144,10 +170,10 @@ C_T = \left( \frac{C_L \Sigma}{4 \Sigma_{proj}} \right)^{1/4}
 \end{equation}
 
 Figure \ref{fig:coeff} shows how the values of $C_T$ and $C_L$ vary over the
-$omega$,$i$-plane. These can be compared with the upper panels of Figure XXX
-in Georgy et al.\ (2014). The variation in $C_L$ is greater than that of $C_T$
-due to the 1/4-power relationship between the two. At $\omega=1$, where
-the geometric factors change the most, $C_L$ varies from $-25\%$ to
+$\omega$,$i$-plane. These can be compared with the upper panels of Figure 2
+in Georgy et al.\ (2014). The variation of $C_L$ is greater than that of $C_T$
+due to the $\nicefrac{1}{4}$-power relationship between the two. At $\omega=1$, where
+the geometric factors are the largest, $C_L$ varies from $-25\%$ to
 $+50\%$ while $C_T$ varies by $\pm4\%$. When the LOS is oriented at
 $i=34^{\circ}$ ($0.6$ rad) above the equatorial plane, both $C_L~,~C_T \simeq 1$
 for all $\omega$.
