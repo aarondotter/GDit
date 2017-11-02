@@ -21,7 +21,7 @@ Lsun=3.8418e33
 Msun=1.989e33
 Rsun=6.96e10
 
-#equations
+#ELR11 equations
 #gives the value of phi
 def eq24(phi,theta,omega,rtw):
     tau = (pow(omega,2) * pow(rtw*cos(theta),3) )/3.0 + cos(theta) + log(tan(0.5*theta))
@@ -37,7 +37,7 @@ def eq32(omega):
     w2=omega*omega
     return sqrt(2./(2.+w2))*pow(1.-w2, 1./12.)*exp(-(4./3.)*w2/pow(2+w2, 3))
 
-def stuff(omega,theta): #eq.26, 27, 28; solve the ELR11 equations
+def solve_ELR(omega,theta): #eq.26, 27, 28; solve the ELR11 equations
     """calculates r~, Teff_ratio, and Flux_ratio"""
     #theta is the polar angle.
     #this routine calculates values for 0 <= theta <= pi/2
@@ -61,12 +61,15 @@ def stuff(omega,theta): #eq.26, 27, 28; solve the ELR11 equations
 
         #the following are special solutions for extreme values of theta
         w2r3=pow(omega,2)*pow(rtw,3)
-
+        
         if theta==0.0: #pole, eq. 27
             Fw = exp( f23 * w2r3 )
 
         elif theta==0.5*pi: #equator, eq. 28
-            Fw = pow(1.0 - w2r3, -f23)
+            if omega < 1.0:
+                Fw = pow(1.0 - w2r3, -f23)
+            else:
+                Fw = 0.0
 
         else: #general case for Fw
             q = root(fun=eq24,args=(theta, omega, rtw), x0=theta)
@@ -86,7 +89,7 @@ def stuff(omega,theta): #eq.26, 27, 28; solve the ELR11 equations
 
 #convenience functions
 def Rp_div_Re(omega):
-    rtw, Teff_ratio, Flux_ratio = stuff(omega, theta=0)
+    rtw, Teff_ratio, Flux_ratio = solve_ELR(omega, theta=0)
     return rtw
 
 def R_div_Re(omega):
@@ -165,7 +168,7 @@ def geometric_factors(omega, i, n_nu=50, n_phi=50, do_checks=False):
     for j,nu in enumerate(nu_array):
 
         theta = pi/2 - nu
-        r,T,F=stuff(omega=omega,theta=theta)
+        r,T,F=solve_ELR(omega=omega,theta=theta)
         
         cos_nu = cos(nu)
         sin_nu = sin(nu)
@@ -253,6 +256,7 @@ def plot_colormap(npz='GD.npz'):
     data=load(npz)
     C_T=data['C_T']
     C_L=data['C_L']
+    C_g=pow(C_T,4)/C_L
     s=shape(C_T)
     close(1)
     figure(1,figsize=(9,8))
@@ -269,11 +273,23 @@ def plot_colormap(npz='GD.npz'):
     figure(2,figsize=(9,8))
     subplots_adjust(right=0.95)
     imshow(C_T,cmap='Spectral',interpolation='bicubic',origin='lower',extent=(0,1,0,pi/2),aspect='auto')
-    colorbar()
+    cbar=colorbar()
     cbar.set_label(r'$\mathrm{C_T}$',size=18)
     yticks([0, pi/8, pi/4, 3*pi/8, pi/2], [r'$0$', r'$\pi/8$', r'$\pi/4$', r'$3\pi/8$', r'$\pi/2$'], fontsize=fs)
     xticks(fontsize=fs)
     xlabel(r'$\omega$',fontsize=fs)
     ylabel(r'Inclination',fontsize=fs)
 
+    close(3)
+    figure(3,figsize=(9,8))
+    subplots_adjust(right=0.95)
+    imshow(C_g,cmap='Spectral',interpolation='bicubic',origin='lower',extent=(0,1,0,pi/2),aspect='auto')
+    cbar=colorbar()
+    cbar.set_label(r'$\mathrm{C_g}$',size=18)
+    yticks([0, pi/8, pi/4, 3*pi/8, pi/2], [r'$0$', r'$\pi/8$', r'$\pi/4$', r'$3\pi/8$', r'$\pi/2$'], fontsize=fs)
+    xticks(fontsize=fs)
+    xlabel(r'$\omega$',fontsize=fs)
+    ylabel(r'Inclination',fontsize=fs)
+
+    
     show()

@@ -11,6 +11,7 @@
 
 \newcommand{\Teff}{\mathrm{T_{eff}}}
 \newcommand{\twTeff}{\mathrm{\tilde{T}_{eff}}}
+\newcommand{\geff}{\mathrm{g_{eff}}}
 
 \begin{document}
 
@@ -30,20 +31,19 @@ luminosity in order to account for the effects of gravity darkening as well as
 the orientation of the observer relative to the stellar rotation axis. I introduce
 \texttt{GDit}, a Python module to calculate these corrections as well as a
 simple means of applying them to stellar evolution models. The code and this document
-are available from the \href{https://github.com/aarondotter/GDit}{Github repository}. \faGithub
+are available from the \href{https://github.com/aarondotter/GDit}{Github repository}.
 \end{abstract}
 
 
 \section{The gravity darkening model}
-The gravity darkening model is derived by Espinosa Lara \& Rieutord (2011,
-A\&A, 533, 43; hereafter ELR). ELR assume the radiative flux is directed
-antiparallel to the effective surface gravity. The effective surface gravity
-is not uniform in a rotating star and, thus, neither is the flux. Since the
-scalar flux (F) is related to the effective temperature ($\Teff$) by the
-Stefan-Boltzmann law, the same
-argument applies to both F and $\Teff$. The ELR model reduces to a differential
-equation characterized by two variables: the polar angle $\theta$ and the ratio
-of surface angular velocity to the Keplerian angular velocity (ELR eq.\ 10):
+The gravity darkening model derived by Espinosa Lara \& Rieutord (2011,
+A\&A, 533, 43; hereafter ELR) assumes the radiative flux is directed
+antiparallel to the effective surface gravity ($\geff$). $\geff$ is not
+uniform in a rotating star and, thus, neither is the flux. Since the scalar
+flux (F) is related to the effective temperature ($\Teff$) by the Stefan-Boltzmann
+law, the same argument applies to both F and $\Teff$. The ELR model reduces to a
+differential equation characterized by two variables: the polar angle $\theta$ and
+the ratio of surface angular velocity to the Keplerian angular velocity (ELR eq.\ 10):
 \begin{equation}
   \omega = \frac{\Omega}{\Omega_K} = \Omega \sqrt{ \frac{R_e}{GM} }
 \end{equation}
@@ -129,7 +129,7 @@ surface integral
   L_{proj} = 4 \iint \limits_{d\vec{\Sigma} \cdot \hat{l} > 0} F d\vec{\Sigma} \cdot \hat{l}
 \end{equation}
 where only the flux projected toward the observer,
-i.e., $d\vec{\Sigma} \cdot \hat{l} \geq 0$, is kept.
+i.e., $d\vec{\Sigma} \cdot \hat{l} > 0$, is kept.
 Once $L_{proj}$ and $\Sigma_{proj}$ are known, the projected effective temperature,
 $\Teff_{,proj}$, can be obtained from the Stefan-Boltzmann law
 \begin{equation}
@@ -192,6 +192,10 @@ the intrinsic $\Teff$ and luminosity as well as the gravity-darkened values for 
 The right panel shows how $\omega$ evolves along the isochrone. The most dramatic differences in the
 H-R diagram occur where $\omega$ is large. Note that $\omega$ is provided by MESA, hence also by MIST,
 as \texttt{surf\_avg\_omega\_div\_omega\_crit}.
+
+%%
+%% C_g is C_T^4/C_L
+%%
 
 \begin{figure}
   \centering
