@@ -224,10 +224,10 @@ def save_coefficients(n,output='GD.npz'):
     inclination=linspace(0,pi/2,n)
     C_T=empty((n,n))
     C_L=empty((n,n))
-    for i,omega in enumerate(omega):
-        for j,incl in enumerate(inclination):
-            C_T[j,i], C_L[j,i] = geometric_factors(omega, incl)
-    savez(output, C_T=C_T, C_L=C_L)
+    for k,w in enumerate(omega):
+        for j,i in enumerate(inclination):
+            C_T[j,k], C_L[j,k] = geometric_factors(w, i)
+    savez(output, C_T=C_T, C_L=C_L, omega=omega, inclination=inclination)
 
 def print_coefficients(n,output='data.txt'):
     omega=linspace(0,1,n)
@@ -236,7 +236,7 @@ def print_coefficients(n,output='data.txt'):
         for i,w in enumerate(omega):
             for j,incl in enumerate(inclination):
                 C_T, C_L = geometric_factors(w, incl)
-                f.write('{0:12.8f} {1:12.8f} {2:12.8f} {3:12.8f}\n'.format(w,incl,C_T,C_L))
+                f.write('{0:.17f} {1:.17f} {2:.17f} {3:.17f}\n'.format(w,incl,C_T,C_L))
 
     
 #returns instance of the BivariateRect
