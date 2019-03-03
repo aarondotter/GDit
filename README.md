@@ -7,4 +7,3 @@ The above figure shows a range of spheroids corresponding to rotating stars at d
 The code allows one to calculate the gravity darkening coefficients C<sub>L</sub> and C<sub>T</sub>, which tell how both rotation and inclination alter the observed, surface-averaged temperature and luminosity of the star. These are inspired by [Georgy et al. (2014)](http://adsabs.harvard.edu/abs/2014A%26A...566A..21G) but calculated in a manner consistent with [Espinosa Lara & Rieutord (2011)](http://adsabs.harvard.edu/abs/2011A%26A...533A..43E) for Roche equipotential surfaces [MESA V]().
 
 C<sub>T</sub> and C<sub>L</sub> allow one to quickly determine the observational consquences of rotating stellar models with arbitrary orientation.
-![H-R diagram](https://github.com/aarondotter/GDit/blob/master/plots/HRD.png)
