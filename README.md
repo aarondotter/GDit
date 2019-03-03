@@ -1,4 +1,4 @@
-# GDit: gravity darkening in python
+# GDit: gravity darkening coefficients in python
 
 GDit implements the mathematical model for gravity darkening in rotating stars presented by [Espinosa Lara & Rieutord (2011)](http://adsabs.harvard.edu/abs/2011A%26A...533A..43E).
 ![Spheroids](https://github.com/aarondotter/GDit/blob/master/Roches.png)
