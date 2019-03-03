@@ -1,10 +1,13 @@
 """Gravity Darkening (GD) module:
-   Implements the Espinosa Lara & Rieutord GD model and applies it to an
-   oblate spheroidal surface. Includes a process to compute the observed
-   Teff and luminosity projected along the line of sight."""
+   Implements the Espinosa Lara & Rieutord (2011) GD model and applies 
+   it to a Roche equipontial surface. Includes a process to compute the 
+   projected Teff and luminosity for any inclination angle 0 < i < pi/2.
+   Requires a MIST isochrone and the read_mist_models.py, available at
+   https://github.com/jieunchoi/MIST_codes/blob/master/scripts/read_mist_models.py
+"""
 
-__version__ = '0'
-__author__ = 'Aaron Dotter'
+__version__ = "1.0"
+__author__ = "Aaron Dotter"
 
 #from numpy import array, load, savez, squeeze, where
 from pylab import *
@@ -39,12 +42,12 @@ figure(1)
 #plot the intrinsic model quantities
 plot(T,log10(L), color='Lime', label='Intrinsic')
 
-#plot the gravity-darkened models at i=0, "edge-on"
+#plot the gravity-darkened models at i=0, "polar projection"
 C_T=f_T.ev(yi=omega, xi=zeros(len(omega)))
 C_L=f_L.ev(yi=omega, xi=zeros(len(omega)))
 plot(C_T*T, log10(C_L*L), color='Blue', label=r'$i=0$')
 
-#plot the gravity-darkened models at i=90 deg, "face-on"
+#plot the gravity-darkened models at i=pi/2 (90deg), "equatorial projection"
 C_T=f_T.ev(yi=omega, xi=(pi/2)*ones(len(omega)))
 C_L=f_L.ev(yi=omega, xi=(pi/2)*ones(len(omega)))
 plot(C_T*T, log10(C_L*L), color='Red', label=r'$i=\pi/2$')
